@@ -20,23 +20,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+/**
+ * AdminPageController : 관리자 페이지 화면의 컨트롤러
+ * 
+ * 작성자 : 김찬희, 김효정
+ */
 public class AdminPageController implements Initializable {
 
-    @FXML private TableView<Artist> artistTableView;
-    @FXML private TableColumn<Artist, String> artistNameColumn;
-    @FXML private TableView<Album> albumTableView;
-    @FXML private TableColumn<Album, String> albumNameColumn;
-    @FXML private TableColumn<Album, String> artistNameForAlbumColumn;
-    @FXML private TableView<SongFXModel> songTableView;
-    @FXML private TableColumn<SongFXModel, String> songNameColumn;
-    @FXML private TableColumn<SongFXModel, String> albumNameForSongColumn;
-    @FXML private TableColumn<SongFXModel, String> artistNameForSongColumn;
-    @FXML private Button logoutButton;
+    // FXML 필드
+    @FXML
+    private TableView<Artist> artistTableView;
+    @FXML
+    private TableColumn<Artist, String> artistNameColumn;
+    @FXML
+    private TableView<Album> albumTableView;
+    @FXML
+    private TableColumn<Album, String> albumNameColumn;
+    @FXML
+    private TableColumn<Album, String> artistNameForAlbumColumn;
+    @FXML
+    private TableView<SongFXModel> songTableView;
+    @FXML
+    private TableColumn<SongFXModel, String> songNameColumn;
+    @FXML
+    private TableColumn<SongFXModel, String> albumNameForSongColumn;
+    @FXML
+    private TableColumn<SongFXModel, String> artistNameForSongColumn;
+    @FXML
+    private Button logoutButton;
 
     private List<Artist> artistList = new ArrayList<>();
     private List<Album> albumList = new ArrayList<>();
     private List<SongFXModel> songList = new ArrayList<>();
 
+    /**
+     * 초기화 메서드로, FXML 파일이 로드된 후 호출됨
+     *
+     * @param url            초기화 URL
+     * @param resourceBundle 초기화 ResourceBundle
+     */
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // TableColumn 초기화
@@ -52,56 +74,93 @@ public class AdminPageController implements Initializable {
         loadSongs();
     }
 
+    /**
+     * 데이터베이스에서 아티스트 목록을 로드함
+     */
     private void loadArtists() {
         artistList.clear();
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM ARTIST");
-             ResultSet rs = stmt.executeQuery()) {
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtil.getConnection();
+            pstmt = conn.prepareStatement("SELECT * FROM ARTIST");
+            rs = pstmt.executeQuery();
+
             while (rs.next()) {
                 artistList.add(new Artist(rs.getInt("ARTIST_ID"), rs.getString("ARTIST_NAME")));
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, pstmt, rs);
         }
         artistTableView.getItems().setAll(artistList);
     }
 
+    /**
+     * 데이터베이스에서 앨범 목록을 로드함
+     */
     private void loadAlbums() {
         albumList.clear();
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT a.ALBUM_ID, a.ALBUM_NAME, ar.ARTIST_NAME FROM ALBUM a JOIN ARTIST ar ON a.ARTIST_ID = ar.ARTIST_ID");
-             ResultSet rs = stmt.executeQuery()) {
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtil.getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT a.ALBUM_ID, a.ALBUM_NAME, ar.ARTIST_NAME FROM ALBUM a JOIN ARTIST ar ON a.ARTIST_ID = ar.ARTIST_ID");
+            rs = pstmt.executeQuery();
+
             while (rs.next()) {
-                albumList.add(new Album(rs.getInt("ALBUM_ID"), rs.getString("ALBUM_NAME"), rs.getString("ARTIST_NAME")));
+                albumList
+                        .add(new Album(rs.getInt("ALBUM_ID"), rs.getString("ALBUM_NAME"), rs.getString("ARTIST_NAME")));
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, pstmt, rs);
         }
         albumTableView.getItems().setAll(albumList);
     }
 
+    /**
+     * 데이터베이스에서 노래 목록을 로드함
+     */
     private void loadSongs() {
         songList.clear();
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT s.SONG_ID, s.SONG_NAME, a.ALBUM_NAME, ar.ARTIST_NAME, s.CLICK_COUNT, s.SONG_FILE, a.ALBUM_COVER " +
-                     "FROM SONG s JOIN ALBUM a ON s.ALBUM_ID = a.ALBUM_ID JOIN ARTIST ar ON s.ARTIST_ID = ar.ARTIST_ID");
-             ResultSet rs = stmt.executeQuery()) {
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtil.getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT s.SONG_ID, s.SONG_NAME, a.ALBUM_NAME, ar.ARTIST_NAME, s.CLICK_COUNT, s.SONG_FILE, a.ALBUM_COVER "
+                            + "FROM SONG s JOIN ALBUM a ON s.ALBUM_ID = a.ALBUM_ID JOIN ARTIST ar ON s.ARTIST_ID = ar.ARTIST_ID");
+            rs = pstmt.executeQuery();
+
             while (rs.next()) {
-                songList.add(new SongFXModel(
-                        rs.getInt("SONG_ID"),
-                        rs.getString("ARTIST_NAME"),
-                        rs.getString("ALBUM_NAME"),
-                        rs.getString("SONG_NAME"),
-                        rs.getString("SONG_FILE"),
-                        rs.getLong("CLICK_COUNT")
-                ));
+                songList.add(
+                        new SongFXModel(rs.getInt("SONG_ID"), rs.getString("ARTIST_NAME"), rs.getString("ALBUM_NAME"),
+                                rs.getString("SONG_NAME"), rs.getString("SONG_FILE"), rs.getLong("CLICK_COUNT")));
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, pstmt, rs);
         }
         songTableView.getItems().setAll(songList);
     }
 
+    /**
+     * 새로운 노래 추가 버튼 클릭 시 호출되는 메서드
+     */
     @FXML
     private void handleAddNewSong() {
         try {
@@ -127,6 +186,9 @@ public class AdminPageController implements Initializable {
         }
     }
 
+    /**
+     * 새로운 아티스트 추가 버튼 클릭 시 호출되는 메서드
+     */
     @FXML
     private void handleAddNewArtist() {
         try {
@@ -146,6 +208,9 @@ public class AdminPageController implements Initializable {
         }
     }
 
+    /**
+     * 새로운 앨범 추가 버튼 클릭 시 호출되는 메서드
+     */
     @FXML
     private void handleAddNewAlbum() {
         try {
@@ -168,6 +233,11 @@ public class AdminPageController implements Initializable {
         }
     }
 
+    /**
+     * 로그아웃 버튼 클릭 시 호출되는 메서드
+     *
+     * @param event 이벤트 객체
+     */
     @FXML
     private void logoutAction(ActionEvent event) {
         // 세션 초기화
@@ -184,7 +254,7 @@ public class AdminPageController implements Initializable {
             // MainApplicatin의 Scene 설정
             currentStage.setScene(scene);
             Image icon = new Image(
-                    getClass().getResourceAsStream("/kosa/watermelon/watermelonmusic/watermelon_logo_only.png")); // 로고 이미지 파일 경로 지정
+                    getClass().getResourceAsStream("/kosa/watermelon/watermelonmusic/watermelon_logo_only.png"));
             currentStage.getIcons().add(icon);
             currentStage.setTitle("WaterMelon Music!");
         } catch (IOException e) {
